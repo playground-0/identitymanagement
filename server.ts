@@ -1,8 +1,11 @@
-import express, { Express, Request, Response, NextFunction } from "express";
-import cors from "cors";
-import { Client, GatewayIntentBits, TextChannel, Guild } from "discord.js";
-import ENV from "./env";
 import axios from "axios";
+import cors from "cors";
+import { Client, GatewayIntentBits, Guild, TextChannel } from "discord.js";
+import express, { Express, NextFunction, Request, Response } from "express";
+import { XMLParser } from "fast-xml-parser";
+import ENV from "./env";
+
+const parser = new XMLParser();
 
 const discordClient = new Client({
   intents: [
@@ -71,10 +74,17 @@ app.post("/api/generate-invite", async (req: Request, res: Response) => {
 });
 
 async function verifySFUToken(token: string, referrer: string) {
-  const response = await axios.get("https://cas.sfu.ca/cas/serviceValidate", {
-    params: { service: referrer, ticket: token },
-  });
-  console.log("SFU CAS Verify Response", JSON.stringify(response.data));
+  try {
+    const response = await axios.get("https://cas.sfu.ca/cas/serviceValidate", {
+      params: { service: referrer, ticket: token },
+    });
+    const sfuData = parser.parse(response.data);
+    console.log("SFU CAS Verify Response", sfuData);
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+
   return true;
 }
 
