@@ -81,7 +81,7 @@ async function verifySFUToken(token: string, referrer: string) {
     const sfuData = parser.parse(response.data);
     console.log("SFU CAS Verify Response", sfuData);
   } catch (e) {
-    console.error(e);
+    console.error("SFU CAS Verify error", e);
     return false;
   }
 
