@@ -1,15 +1,16 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 
+import ENV from "./env";
+
+if (ENV.DISCORD_BOT_TOKEN === "") {
+  console.error("DISCORD_BOT_TOKEN UNAVAILABLE");
+} else {
+  console.info("DISCORD_BOT_TOKEN AVAILABLE")
+}
+
 const app: Express = express();
 const port: number = (process.env.PORT && parseInt(process.env.PORT)) || 8080;
-
-// https://www.npmjs.com/package/cors
-const whitelist = [
-  "https://mentormountain.ca",
-  "https://www.mentormountain.ca",
-  "https://www.sfu.ca",
-];
 
 // const corsOptions = {
 //   origin: function (origin: any, callback: any) {
