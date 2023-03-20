@@ -1,6 +1,6 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, GatewayIntentBits, TextChannel, Guild } from "discord.js";
 import ENV from "./env";
 
 const discordClient = new Client({
@@ -10,22 +10,6 @@ const discordClient = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
   ],
-});
-
-// https://www.digitalocean.com/community/tutorials/how-to-build-a-discord-bot-with-node-js
-const discordPrefix = "!";
-discordClient.on("messageCreate", function (message) {
-  if (message.author.bot) return;
-  if (!message.content.startsWith(discordPrefix)) return;
-
-  const commandBody = message.content.slice(discordPrefix.length);
-  const args = commandBody.split(" ");
-  const command = (args.shift() || "").toLowerCase();
-
-  if (command === "ping") {
-    const timeTaken = Date.now() - message.createdTimestamp;
-    message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
-  }
 });
 
 discordClient.login(ENV.DISCORD_BOT_TOKEN);
@@ -65,6 +49,27 @@ app.get("/api/health", (_: Request, res: Response) => {
 app.post("/api/verify", (req: Request, res: Response) => {
   const { sfuToken } = req.body;
   res.json(sfuToken);
+});
+
+async function fetchGuild(): Promise<Guild> {
+  return discordClient.guilds.fetch(ENV.DISCORD_GUILD_ID);
+}
+
+app.post("/api/generate-invite", async (req: Request, res: Response) => {
+  const guild = await fetchGuild();
+  const channel = await guild.channels.fetch(ENV.DISCORD_WELCOME_CHANNEL_ID) as TextChannel;
+
+  if (channel) {
+    const invite = await channel.createInvite({
+      maxUses: 1,
+      maxAge: 120,
+      temporary: true,
+      unique: true,
+    });
+
+    console.log("Invite", invite.toJSON());
+    res.json({ invite: invite.url });
+  }
 });
 
 app.listen(port, () => {
