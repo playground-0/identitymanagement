@@ -73,19 +73,40 @@ app.post("/api/generate-invite", async (req: Request, res: Response) => {
   }
 });
 
-async function verifySFUToken(token: string, referrer: string) {
+interface CASValidationResponse {
+  computingID: string;
+  success: boolean;
+}
+
+async function verifySFUToken(
+  token: string,
+  referrer: string
+): Promise<CASValidationResponse> {
+  const serviceResponseKey = "cas:serviceResponse";
+  const authSuccessKey = "cas:authenticationSuccess";
+  const casUserKey = "cas:user";
+
   try {
     const response = await axios.get("https://cas.sfu.ca/cas/serviceValidate", {
       params: { service: referrer, ticket: token },
     });
+
     const sfuData = parser.parse(response.data);
-    console.log("SFU CAS Verify Response", sfuData);
+
+    if (
+      serviceResponseKey in sfuData &&
+      authSuccessKey in sfuData[serviceResponseKey]
+    ) {
+      return {
+        computingID: sfuData[serviceResponseKey][authSuccessKey][casUserKey],
+        success: true,
+      };
+    }
   } catch (e) {
     console.error("SFU CAS Verify error", e);
-    return false;
   }
 
-  return true;
+  return { computingID: "", success: false };
 }
 
 app.post("/api/verify", async (req: Request, res: Response) => {
