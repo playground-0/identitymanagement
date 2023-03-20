@@ -46,18 +46,15 @@ app.get("/api/health", (_: Request, res: Response) => {
   });
 });
 
-app.post("/api/verify", (req: Request, res: Response) => {
-  const { sfuToken } = req.body;
-  res.json(sfuToken);
-});
-
 async function fetchGuild(): Promise<Guild> {
   return discordClient.guilds.fetch(ENV.DISCORD_GUILD_ID);
 }
 
 app.post("/api/generate-invite", async (req: Request, res: Response) => {
   const guild = await fetchGuild();
-  const channel = await guild.channels.fetch(ENV.DISCORD_WELCOME_CHANNEL_ID) as TextChannel;
+  const channel = (await guild.channels.fetch(
+    ENV.DISCORD_WELCOME_CHANNEL_ID
+  )) as TextChannel;
 
   if (channel) {
     const invite = await channel.createInvite({
@@ -70,6 +67,42 @@ app.post("/api/generate-invite", async (req: Request, res: Response) => {
     console.log("Invite", invite.toJSON());
     res.json({ invite: invite.url });
   }
+});
+
+function verifySFUToken(token: any) {
+  return true;
+}
+
+app.post("/api/verify", async (req: Request, res: Response) => {
+  const { sfuToken, discordTag } = req.body;
+
+  if (!verifySFUToken) {
+    res.status(403).send();
+    return;
+  }
+
+  // Token verified
+  const guild = await fetchGuild();
+  const members = await guild.members.fetch();
+  const targetUser = members.find((member) => member.user.tag === discordTag);
+
+  if (!targetUser) {
+    res.status(400).json({ error: `\'${discordTag}\' is not in the server` });
+    return;
+  }
+
+  const roles = await guild.roles.fetch();
+  const memberRole = roles.find(
+    (role) => role.name === ENV.DISCORD_MEMBER_ROLE_NAME
+  );
+
+  if (!memberRole) {
+    res.status(500).send();
+    return;
+  }
+
+  targetUser.roles.add(memberRole);
+  res.json({ message: `${discordTag} given role ${memberRole.name}` });
 });
 
 app.listen(port, () => {
