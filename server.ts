@@ -2,6 +2,7 @@ import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { Client, GatewayIntentBits, TextChannel, Guild } from "discord.js";
 import ENV from "./env";
+import axios from "axios";
 
 const discordClient = new Client({
   intents: [
@@ -69,15 +70,24 @@ app.post("/api/generate-invite", async (req: Request, res: Response) => {
   }
 });
 
-function verifySFUToken(token: any) {
+async function verifySFUToken(token: string, referrer: string) {
+  const response = await axios.get("https://cas.sfu.ca/cas/serviceValidate", {
+    params: { service: referrer, ticket: token },
+  });
+  console.log("SFU CAS Verify Response", JSON.stringify(response.data));
   return true;
 }
 
 app.post("/api/verify", async (req: Request, res: Response) => {
-  const { sfuToken, discordTag } = req.body;
+  const { referrer, sfuToken, discordTag } = req.body;
 
-  if (!verifySFUToken) {
-    res.status(403).send();
+  if (!referrer || !sfuToken || !discordTag) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  if (!(await verifySFUToken(sfuToken, referrer))) {
+    res.status(403).json({ error: "Invalid CAS login" });
     return;
   }
 
