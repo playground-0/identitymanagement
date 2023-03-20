@@ -1,15 +1,18 @@
 import "dotenv/config";
 
+const DEFAULT = "";
+
 const ENV = {
     VERIFIED_CLAIMS_SECRET: process.env.VERIFIED_CLAIMS_SECRET || "secret",
-    DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN || ""
+    DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN || DEFAULT,
+    DISCORD_WELCOME_CHANNEL_ID: process.env.DISCORD_WELCOME_CHANNEL_ID || DEFAULT,
+    DISCORD_GUILD_ID: process.env.DISCORD_GUILD_ID || DEFAULT
 };
 
-if (ENV.DISCORD_BOT_TOKEN === "") {
-    console.error("DISCORD_BOT_TOKEN UNAVAILABLE");
-    process.exit(1);
-  } else {
-    console.info("DISCORD_BOT_TOKEN AVAILABLE");
+for (const [k, v] of Object.entries(ENV)) {
+  if (v === DEFAULT) {
+    console.error(`${k} UNAVAILABLE`);
+    process.exit(1)
   }
-
+}
 export default ENV;
