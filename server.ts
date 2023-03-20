@@ -40,6 +40,11 @@ app.get("/api/health", (_: Request, res: Response) => {
   });
 });
 
+app.post("/api/verify", (req: Request, res: Response) => {
+  const {sfuToken} = req.body;
+  res.json(sfuToken)
+})
+
 app.listen(port, () => {
   console.log(`Attaching to port ${port}`);
 });
