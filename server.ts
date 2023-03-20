@@ -1,13 +1,34 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
-
+import { Client, GatewayIntentBits } from "discord.js";
 import ENV from "./env";
 
-if (ENV.DISCORD_BOT_TOKEN === "") {
-  console.error("DISCORD_BOT_TOKEN UNAVAILABLE");
-} else {
-  console.info("DISCORD_BOT_TOKEN AVAILABLE")
-}
+const discordClient = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
+  ],
+});
+
+// https://www.digitalocean.com/community/tutorials/how-to-build-a-discord-bot-with-node-js
+const discordPrefix = "!";
+discordClient.on("messageCreate", function (message) {
+  if (message.author.bot) return;
+  if (!message.content.startsWith(discordPrefix)) return;
+
+  const commandBody = message.content.slice(discordPrefix.length);
+  const args = commandBody.split(" ");
+  const command = (args.shift() || "").toLowerCase();
+
+  if (command === "ping") {
+    const timeTaken = Date.now() - message.createdTimestamp;
+    message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
+  }
+});
+
+discordClient.login(ENV.DISCORD_BOT_TOKEN);
 
 const app: Express = express();
 const port: number = (process.env.PORT && parseInt(process.env.PORT)) || 8080;
@@ -23,7 +44,7 @@ const port: number = (process.env.PORT && parseInt(process.env.PORT)) || 8080;
 // };
 
 const corsOptions = {
-  origin: '*',
+  origin: "*",
 };
 
 app.use(cors(corsOptions));
@@ -42,9 +63,9 @@ app.get("/api/health", (_: Request, res: Response) => {
 });
 
 app.post("/api/verify", (req: Request, res: Response) => {
-  const {sfuToken} = req.body;
-  res.json(sfuToken)
-})
+  const { sfuToken } = req.body;
+  res.json(sfuToken);
+});
 
 app.listen(port, () => {
   console.log(`Attaching to port ${port}`);
