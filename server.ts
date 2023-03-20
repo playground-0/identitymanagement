@@ -117,7 +117,11 @@ app.post("/api/verify", async (req: Request, res: Response) => {
     return;
   }
 
-  if (!(await verifySFUToken(sfuToken, referrer))) {
+  const { computingID, success: casSuccess } = await verifySFUToken(
+    sfuToken,
+    referrer
+  );
+  if (!casSuccess) {
     res.status(403).json({ error: "Invalid CAS login" });
     return;
   }
@@ -143,7 +147,9 @@ app.post("/api/verify", async (req: Request, res: Response) => {
   }
 
   targetUser.roles.add(memberRole);
-  res.json({ message: `${discordTag} given role ${memberRole.name}` });
+  res.json({
+    message: `${discordTag} for ${computingID} given ${memberRole.name} role`,
+  });
 });
 
 app.listen(port, () => {
